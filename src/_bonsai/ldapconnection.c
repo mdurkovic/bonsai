@@ -898,8 +898,10 @@ parse_search_result(LDAPConnection *self, LDAPMessage *res, PyObject *obj) {
         }
     }
 
+    referrals = NULL;
+
     /* Check for any error during the searching. */
-    rc = ldap_parse_result(self->ld, res, &err, NULL, NULL, NULL,
+    rc = ldap_parse_result(self->ld, res, &err, NULL, NULL, &referrals,
             &returned_ctrls, 1);
 
     if (rc != LDAP_SUCCESS && rc != LDAP_MORE_RESULTS_TO_RETURN) {
@@ -910,6 +912,19 @@ parse_search_result(LDAPConnection *self, LDAPMessage *res, PyObject *obj) {
     if (err == LDAP_NO_SUCH_OBJECT && search_iter == NULL) {
         /* Shortcut for normal search to return empty list. */
         return buffer;
+    }
+
+    if (err == LDAP_REFERRAL) {
+        if (referrals != NULL) {
+            refobj = NULL;
+            refobj = create_reference_object(self, referrals);
+            if (refobj == NULL) goto error;
+            if (PyList_Append(buffer, refobj) != 0) {
+                Py_DECREF(refobj);
+                goto error;
+            }
+            Py_DECREF(refobj);
+        }
     }
 
     if (err != LDAP_SUCCESS && err != LDAP_PARTIAL_RESULTS && err != LDAP_REFERRAL) {
