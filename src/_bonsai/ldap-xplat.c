@@ -724,6 +724,7 @@ ldap_init_thread_func(void *params) {
         set_cert_policy(data->ld, data->cert_policy);
     }
 #ifndef WIN32
+    ldap_set_option(data->ld, LDAP_OPT_X_SASL_NOCANON, LDAP_OPT_ON);
     /* SASL security poperties settings on available on Unix. */
     if (data->sasl_sec_props != NULL) {
         DEBUG("set sasl sec properties: %s", data->sasl_sec_props);
